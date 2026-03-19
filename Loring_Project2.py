@@ -31,6 +31,7 @@ class SparkDataCheck:
         return cls(df)
     
     #creates second @classmethod - creates an instance from a (standard) pandas dataframe
+    @classmethod
     def pandas_dataframe(cls, spark, pd_df):
         """
         Create an instance of the SparkDataCheck class from a pandas dataframe
@@ -42,3 +43,32 @@ class SparkDataCheck:
         """
         df = spark.createDataFrame(pd_df)
         return cls(df)
+    
+    #creates interval validation method
+    def interval_chk(self, col: str, lower: str = None, upper: str = None):
+        
+        #checks that at least one bound is provided
+        if lower is None and upper is None:
+            print("At least a lower or upper bound must be provied. Please try again.")
+            return self #returns itself
+        
+        #checks that column supplied is in the dataframe
+        if col not in self.df.columns:
+            print("The column you supplied does not exist in the dataframe. Please try again.")
+            return self #returns itself
+        
+        #grab the dtypes for each column using the dtype attribute and passing to a dictionary
+        dtypes_dict = dict(self.df.dtypes)
+        col_type = dtypes_dict[col] #stores the type of the column that the user supplies into the method
+        
+        #check if the user supplied a non-numeric column
+        if col_type not in ("float", "int", "longint", "bigint", "double", "integer"):
+            print ("The column you supplied is of non-numeric type. Please try again.")
+            return self #returns itself
+        
+        #return True/False based on whether or not column value is in range supplied, account for NULL
+        
+        
+        
+        
+        
