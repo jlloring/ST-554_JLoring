@@ -1,3 +1,8 @@
+# Name: Jamie Loring
+# Due Date: 3/26/2026
+# Purpose: ST 554 Project 2, Part 1
+
+
 ## Part 1: Creating a Class
 
 
