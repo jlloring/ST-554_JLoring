@@ -44,6 +44,8 @@ class SparkDataCheck:
         df = spark.createDataFrame(pd_df)
         return cls(df)
     
+    ## Validation Methods
+    
     #creates interval validation method
     def interval_chk(self, col_name: str, lower: str = None, upper: str = None):
         
@@ -67,7 +69,7 @@ class SparkDataCheck:
             return self #returns itself
         
         #return True/False based on whether or not column value is in range supplied, account for NULL
-        ## build condition checker for supplying into withColumn
+        #build condition checker for supplying into withColumn
         if lower is not None and upper is not None:
             cond = col(col_name).between(lower, upper) #condition when both bounds are supplied
         elif lower is not None:
@@ -75,7 +77,7 @@ class SparkDataCheck:
         else:
             cond = col(col_name) <= upper #condition when only upper bound is supplied
             
-        ## create Interval_Check column and account for NULL values
+        #create Interval_Check column and account for NULL values
         self.df = self.df.withColumn("Interval_Check", when(col(col_name).isNull(), None).otherwise(cond))
         return self #returns itself
     
@@ -96,8 +98,22 @@ class SparkDataCheck:
             print ("The column you supplied is of non-string type. Please try again.")
             return self #returns itself
             
-        # create Levels_Check column and account for NULL values
+        #create Levels_Check column and account for NULL values
         self.df = self.df.withColumn("Levels_Check", when(col(col_name).isNull(), None).otherwise(col(col_name).isin(levels)))
         return self #returns itself
+    
+    # creates missing validation method
+    def missing_chk(self, col_name: str):
+        
+        #checks that column supplied is in the dataframe
+        if col_name not in self.df.columns:
+            print("The column you supplied does not exist in the dataframe. Please try again.")
+            return self #returns itself
+        
+        #create Missing_Check column
+        self.df = self.df.withColumn("Missing_Check", when(col(col_name).isNull(), True).otherwise(False))
+        return self #returns itself
+    
+    ## Summarization Methods
     
     
