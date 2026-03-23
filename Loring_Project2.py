@@ -47,7 +47,7 @@ class SparkDataCheck:
     ## Validation Methods
     
     #creates interval validation method
-    def interval_chk(self, col_name: str, lower: str = None, upper: str = None):
+    def interval_chk(self, col_name: str, lower = None, upper = None):
         
         #checks that at least one bound is provided
         if lower is None and upper is None:
@@ -78,7 +78,7 @@ class SparkDataCheck:
             cond = F.col(col_name) <= upper #condition when only upper bound is supplied
             
         #create Interval_Check column and account for NULL values
-        self.df = self.df.withColumn("Interval_Check", when(col(col_name).isNull(), None).otherwise(cond))
+        self.df = self.df.withColumn("Interval_Check", F.when(F.col(col_name).isNull(), None).otherwise(cond))
         return self #returns itself
     
     #creates levels validation method
@@ -94,12 +94,13 @@ class SparkDataCheck:
         col_type = dtypes_dict[col_name] #stores the type of the column that the user supplies into the method
         
         #check if the user supplied a non-string column
-        if col_type not in ("string"):
+        if col_type != "string":
             print ("The column you supplied is of non-string type. Please try again.")
             return self #returns itself
             
         #create Levels_Check column and account for NULL values
-        self.df = self.df.withColumn("Levels_Check", when(col(col_name).isNull(), None).otherwise(col(col_name).isin(levels)))
+        self.df = self.df.withColumn("Levels_Check", F.when(F.col(col_name).isNull(), None) \
+                                     .otherwise(F.col(col_name).isin(levels)))
         return self #returns itself
     
     #creates missing validation method
@@ -111,52 +112,122 @@ class SparkDataCheck:
             return self #returns itself
         
         #create Missing_Check column
-        self.df = self.df.withColumn("Missing_Check", when(col(col_name).isNull(), True).otherwise(False))
+        self.df = self.df.withColumn("Missing_Check", F.col(col_name).isNull())
         return self #returns itself
     
     ## Summarization Methods
     
     #creates min & max method
     def min_max(self, col_name: str = None, group_var: str = None):
-                
-        #checks that column supplied is in the dataframe
-        if col_name not in self.df.columns:
-            print("The column you supplied does not exist in the dataframe. Please try again.")
-            return self #returns itself
-        
+    
         #grab the dtypes for each column using the dtype attribute and passing to a dictionary
         dtypes_dict = dict(self.df.dtypes)
-        col_type = dtypes_dict[col_name] #stores the type of the column that the user supplies into the method
         
-        #check if the user supplied a non-numeric column
-        if col_type not in ("float", "int", "longint", "bigint", "double", "integer"):
-            print ("The column you supplied is of non-numeric type. Please try again.")
-            return None #returns None per instructions
-        
-        #report min/max if no col_name is supplied for all numeric columns, accounting for possible grouping variable
-        if col_name == None:
-            #HELP
-            
-        #report min/max for specific col_name supplied, accounting for possible grouping variable
+        #executing method when col_name is not None
         if col_name is not None:
-            return self.df.groupBy(group_var).agg(F.min(col_name), F.max(col_name))
+            
+            #checks that column supplied is in the dataframe
+            if col_name not in self.df.columns:
+                print("The column you supplied does not exist in the dataframe. Please try again.")
+                return None #returns None per instructions
+            
+            #check if the user supplied a non-numeric column
+            col_type = dtypes_dict[col_name] #stores the type of the column that the user supplies into the method
+            if col_type not in ("float", "int", "longint", "bigint", "double", "integer"):
+                print ("The column you supplied is of non-numeric type. Please try again.")
+                return None #returns None per instructions
+            
+            if group_var is not None:
+                
+                #checks that group_var is in the dataframe
+                if group_var not in self.df.columns:
+                    print("The grouping variable you supplied does not exist in the dataframe. Please try again.")
+                    return None #returns None per instructions
+                else:
+                    return self.df.groupBy(group_var).agg(F.min(col_name), F.max(col_name)).toPandas()
+            
+            else:
+                return self.df.agg(F.min(col_name), F.max(col_name)).toPandas()
+            
+        #executing method when col_name is None
+        else:
+            #store all numeric columns
+            numeric_columns = []
+            
+            #collect the dtype of all columns
+            for i in self.df.columns:
+                dtype = dtypes_dict[i]
+                
+                #only append numeric columns to list
+                if dtype in ("float", "int", "longint", "bigint", "double", "integer"):
+                    numeric_columns.append(i)
+                
+            #store mins and maxes in separate lists, bring them together, then unpack them
+            min_list = []
+            max_list = []
+            
+            #append mins and maxes to their separate lists
+            for x in numeric_columns:
+                min_list.append(F.min(x))
+                max_list.append(F.max(x))
+               
+            #combine min and max lists
+            full_list = min_list + max_list
+            
+            if group_var is not None:
+                
+                #checks that group_var is in the dataframe
+                if group_var not in self.df.columns:
+                    print("The grouping variable you supplied does not exist in the dataframe. Please try again.")
+                    return None #returns None per instructions
+                else:
+                    return self.df.groupBy(group_var).agg(*full_list).toPandas()
+            
+            else:
+                return self.df.agg(*full_list).toPandas()
         
     #creates string counts method
     def string_counts(self, col_name1: str, col_name2: str = None):
         
-        #checks that column supplied is in the dataframe
-        if col_name1 not in self.df.columns and col_name2 not in self.df.columns:
-            print("The column(s) you supplied do(es) not exist in the dataframe. Please try again.")
-            return self #returns itself
-        
         #grab the dtypes for each column using the dtype attribute and passing to a dictionary
         dtypes_dict = dict(self.df.dtypes)
-        col_type = dtypes_dict[[col_name1, col_name2]] #stores the type of the column(s) that the user supplies into the method
         
-        #check if the user supplied a non-string column
-        if col_type not in ("string"):
-            print ("The column you supplied is of non-string type. Please try again.")
-            return self #returns itself
+        #if only 1 column is supplied:
+        if col_name2 is None:
+            
+            #checks that column 1 supplied is in the dataframe
+            if col_name1 not in self.df.columns:
+                print("The first column you supplied is not in the dataframe. Please try again.")
+                return None #returns None
+            
+            #checks that column1 is a string
+            if dtypes_dict[col_name1] != "string":
+                print ("The first column you supplied is of non-string type. Please try again.")
+                return None #returns None
+            
+            return self.df.groupBy(col_name1).count().toPandas()
         
+        #if both columns are supplied
         else:
-            return self.df.groupBy(col_name1, col_name2).count()
+            
+            #checks that column 1 supplied is in the dataframe
+            if col_name1 not in self.df.columns:
+                print("The first column you supplied is not in the dataframe. Please try again.")
+                return None #returns None
+            
+            #checks that column1 is a string
+            if dtypes_dict[col_name1] != "string":
+                print ("The first column you supplied is of non-string type. Please try again.")
+                return None #returns None
+            
+            #checks that column 2 supplied is in the dataframe
+            if col_name2 not in self.df.columns:
+                print("The second column you supplied is not in the dataframe. Please try again.")
+                return None #returns None
+            
+            #checks that column2 is a string
+            if dtypes_dict[col_name2] != "string":
+                print ("The second column you supplied is of non-string type. Please try again.")
+                return None #returns None
+            
+            return self.df.groupBy(col_name1, col_name2).count().toPandas()
