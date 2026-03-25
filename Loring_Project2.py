@@ -56,7 +56,7 @@ class SparkDataCheck:
         
         #checks that at least one bound is provided
         if lower is None and upper is None:
-            print("At least a lower or upper bound must be provied. Please try again.")
+            print("At least a lower or upper bound must be provided. Please try again.")
             return self #returns itself
         
         #checks that column supplied is in the dataframe
@@ -82,12 +82,15 @@ class SparkDataCheck:
         else:
             cond = F.col(col_name) <= upper #condition when only upper bound is supplied
             
+        #create dynamic new column name so method can be chained
+        new_col_name = "Interval_Check_" + col_name
+            
         #create Interval_Check column and account for NULL values
-        self.df = self.df.withColumn("Interval_Check", F.when(F.col(col_name).isNull(), None).otherwise(cond))
-        return self #returns itself
+        self.df = self.df.withColumn(new_col_name, F.when(F.col(col_name).isNull(), None).otherwise(cond))
+        return self
     
     #creates levels validation method
-    def levels_chk(self, col_name: str, levels):
+    def levels_chk(self, col_name: str, levels: list):
         
         #checks that column supplied is in the dataframe
         if col_name not in self.df.columns:
@@ -102,11 +105,14 @@ class SparkDataCheck:
         if col_type != "string":
             print ("The column you supplied is of non-string type. Please try again.")
             return self #returns itself
+        
+        #create dynamic new column name so method can be chained
+        new_col_name = "Levels_Check_" + col_name
             
         #create Levels_Check column and account for NULL values
-        self.df = self.df.withColumn("Levels_Check", F.when(F.col(col_name).isNull(), None) \
+        self.df = self.df.withColumn(new_col_name, F.when(F.col(col_name).isNull(), None) \
                                      .otherwise(F.col(col_name).isin(levels)))
-        return self #returns itself
+        return self
     
     #creates missing validation method
     def missing_chk(self, col_name: str):
@@ -116,9 +122,12 @@ class SparkDataCheck:
             print("The column you supplied does not exist in the dataframe. Please try again.")
             return self #returns itself
         
+        #create dynamic new column name so method can be chained
+        new_col_name = "Missing_Check_" + col_name
+        
         #create Missing_Check column
-        self.df = self.df.withColumn("Missing_Check", F.col(col_name).isNull())
-        return self #returns itself
+        self.df = self.df.withColumn(new_col_name, F.col(col_name).isNull())
+        return self
     
     ## Summarization Methods
     
