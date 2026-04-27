@@ -16,8 +16,11 @@ for i in range(20):
     #randomly sample 5 rows
     sampled_5 = pwr_strm_dat.sample(n = 5)
     
-    #output above to .csv file in csv_files_final folder
-    sampled_5.to_csv("samples.csv", index = False) #prevents indices from being written out
+    #use f string to store each sampled file as its own.csv in the csv_files_final_folder
+    sampled_file_name = f"csv_files_final/samples_{i}.csv"
+    
+    #output each sampled file to a csv in the csv_files_final folder
+    sampled_5.to_csv(sampled_file_name, index = False) #prevents indices from being written out
     
     #pauses for 10 seconds in between outputting of data sets
     time.sleep(10)
