@@ -5,6 +5,7 @@
 
 #import the required modules
 import pandas as pd
+import time
 
 #read in power_streaming_data_csv as a regular pandas dataframe
 pwr_strm_dat = pd.read_csv("power_streaming_data.csv")
@@ -18,4 +19,8 @@ for i in range(20):
     #output above to .csv file in csv_files_final folder
     sampled_5.to_csv("samples.csv", index = False) #prevents indices from being written out
     
-    ##STILL NEED TO Pause for 10 seconds in between outputting of data sets
+    #pauses for 10 seconds in between outputting of data sets
+    time.sleep(10)
+    
+    
+#Note: This entire .py file can now be submitted in a python console!
