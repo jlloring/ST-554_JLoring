@@ -22,8 +22,8 @@ for i in range(20):
     #output each sampled file to a csv in the csv_files_final folder
     sampled_5.to_csv(sampled_file_name, index = False) #prevents indices from being written out
     
-    #pauses for 10 seconds in between outputting of data sets
-    time.sleep(10)
+    #pauses for 30 seconds in between outputting of data sets
+    time.sleep(30)
     
     
 #Note: This entire .py file can now be submitted in a python console!
